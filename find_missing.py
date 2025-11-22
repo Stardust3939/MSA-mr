@@ -1,7 +1,7 @@
 import pandas
 import os
 
-dir = "Z:\\Finngen_r12_metabolism_MR_results"
+dir = "Z:\\Finngen_r12_metabolism_rev_MR_results"
 
 list = os.listdir(dir)
 filelist = pandas.read_excel("Z:\\finngene_summary_table.xlsx")
