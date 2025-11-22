@@ -1,10 +1,15 @@
 library(QTLMR)
 library(TwoSampleMR)
+library(readxl)
+library(foreach)
+library(doParallel)
+library(parallel)  
+
 df = load("Z:\\finngen_R12_1e_4.Rdata")
 
 exposure_list = unique(data$exposure)
 
-msaoutcome = read_exposure_data(
+msaoutcome = read_outcome_data(
   "Z:\\MSA_TwosampleMR.txt",
   sep = "\t",
   snp_col = "SNP",
@@ -27,7 +32,11 @@ list = read_excel("Z:\\finngene_summary_table.xlsx")
 setwd("Z:\\Finngen_r12_metabolism_MR_results")
 
 
-for (finn_exposure in exposure_list) {
+cl <- makeCluster(20)
+registerDoParallel(cl)
+
+foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readxl")) %dopar% {
+  finn_exposure = exposure_list[i]
   exposure_dat = data[data$exposure == finn_exposure, ]
   colnames(exposure_dat)[colnames(exposure_dat) == "SNP"] <- "rsid"
   colnames(exposure_dat)[colnames(exposure_dat) == "pval.exposure"] <- "pval"
@@ -42,9 +51,10 @@ for (finn_exposure in exposure_list) {
   # get exposure number from list, finn_exposure is LONGNAME, get OMOPID:
   exposure_index = which(list$LONGNAME == finn_exposure)
   filename = paste0(list$OMOPID[exposure_index])
+  filepath = paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename)
   # create output folder for each exposure:
-  if (!dir.exists(filename)) {
-    dir.create(filename)
+  if (!dir.exists(filepath)) {
+    dir.create(filepath)
   }
   setwd(paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename))
   
@@ -90,4 +100,7 @@ for (finn_exposure in exposure_list) {
   dev.off()
   
   Visualizing_MR_forest(res,save_plot = TRUE,plot_pdf = "forest_plot")
+  dev.off()
 }
+
+stopCluster(cl)
