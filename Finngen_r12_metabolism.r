@@ -100,7 +100,6 @@ foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readx
   dev.off()
   
   Visualizing_MR_forest(res,save_plot = TRUE,plot_pdf = "forest_plot")
-  dev.off()
 }
 
 stopCluster(cl)
