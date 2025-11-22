@@ -14,5 +14,5 @@ for dir_name in dir_list:
         continue
     # count how many rows in column 'pval' less than 0.05:
     count = len(df[df['pval'] < 0.05])
-    if count >= 1:
+    if count >= 3:
         print(dir_name, count)
