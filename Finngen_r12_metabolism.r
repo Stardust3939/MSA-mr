@@ -22,7 +22,7 @@ msaoutcome = read_exposure_data(
 )
 
 # open detailed exposure list to get exposure index:
-list = read.excel("Z:\\finngene_summary_table.xlsx")
+list = read_excel("Z:\\finngene_summary_table.xlsx")
 
 setwd("Z:\\Finngen_r12_metabolism_MR_results")
 
@@ -41,9 +41,15 @@ for (finn_exposure in exposure_list) {
 
   # get exposure number from list, finn_exposure is LONGNAME, get OMOPID:
   exposure_index = which(list$LONGNAME == finn_exposure)
-  filename = paste0(list$OMOPID[exposure_index], "_", gsub(" ", "_", finn_exposure))
+  filename = paste0(list$OMOPID[exposure_index])
+  # create output folder for each exposure:
+  if (!dir.exists(filename)) {
+    dir.create(filename)
+  }
+  setwd(paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename))
+  
 
-  dat <- harmonise_data(exposure_dat = exposure_clump, outcome_dat = outcome)
+  dat <- harmonise_data(exposure_dat = exposure_clump, outcome_dat = msaoutcome)
   res <- mr(dat)
   #export res to tsv in working directory:
   wd = getwd()
