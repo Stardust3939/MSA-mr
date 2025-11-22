@@ -7,9 +7,22 @@ library(parallel)
 
 df = load("Z:\\finngen_R12_1e_4.Rdata")
 
-exposure_list = unique(data$exposure)
+# change exposure name to outcome name:
+colnames(data)[colnames(data) == "exposure"] <- "outcome"
+colnames(data)[colnames(data) == "beta.exposure"] <- "beta.outcome"
+colnames(data)[colnames(data) == "se.exposure"] <- "se.outcome"
+colnames(data)[colnames(data) == "effect_allele.exposure"] <- "effect_allele.outcome"
+colnames(data)[colnames(data) == "other_allele.exposure"] <- "other_allele.outcome"
+colnames(data)[colnames(data) == "eaf.exposure"] <- "eaf.outcome"
+colnames(data)[colnames(data) == "pval.exposure"] <- "pval.outcome"
+colnames(data)[colnames(data) == "samplesize.exposure"] <- "samplesize.outcome"
+colnames(data)[colnames(data) == "mr_keep.exposure"] <- "mr_keep.outcome"
+colnames(data)[colnames(data) == "id.exposure"] <- "id.outcome"
+colnames(data)[colnames(data) == "pval_origin.exposure"] <- "pval_origin.outcome"
 
-msaoutcome = read_outcome_data(
+outcome_list = unique(data$outcome)
+
+exposure_dat = read_exposure_data(
   "Z:\\MSA_TwosampleMR.txt",
   sep = "\t",
   snp_col = "SNP",
@@ -26,40 +39,38 @@ msaoutcome = read_outcome_data(
   log_pval = FALSE
 )
 
-# open detailed exposure list to get exposure index:
+colnames(exposure_dat)[colnames(exposure_dat) == "SNP"] <- "rsid"
+colnames(exposure_dat)[colnames(exposure_dat) == "pval.exposure"] <- "pval"
+colnames(exposure_dat)[colnames(exposure_dat) == "id.exposure"] <- "trait_id"
+
+exposure_clump <- ieugwasr::ld_clump(dat = exposure_dat, clump_r2 = 0.01, clump_kb = 10000, clump_p = 1, plink_bin = "C:/Users/Jerry/.conda/envs/r45/Lib/R/library/plinkbinr/bin/plink_Windows.exe", bfile = "Z:/1kgv3/EUR")
+
+colnames(exposure_clump)[colnames(exposure_clump) == "rsid"] <- "SNP"
+colnames(exposure_clump)[colnames(exposure_clump) == "pval"] <- "pval.exposure"
+colnames(exposure_clump)[colnames(exposure_clump) == "trait_id"] <- "id.exposure"
+
 list = read_excel("Z:\\finngene_summary_table.xlsx")
 
-setwd("Z:\\Finngen_r12_metabolism_MR_results")
+setwd("Z:\\Finngen_r12_metabolism_rev_MR_results")
 
 
 cl <- makeCluster(28)
 registerDoParallel(cl)
 
 foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readxl")) %dopar% {
-  finn_exposure = exposure_list[i]
-  exposure_dat = data[data$exposure == finn_exposure, ]
-  colnames(exposure_dat)[colnames(exposure_dat) == "SNP"] <- "rsid"
-  colnames(exposure_dat)[colnames(exposure_dat) == "pval.exposure"] <- "pval"
-  colnames(exposure_dat)[colnames(exposure_dat) == "id.exposure"] <- "trait_id"
+  finn_outcome = outcome_list[i]
+  outcome_dat = data[data$outcome == finn_outcome, ]
+  outcome_index = which(list$LONGNAME == finn_outcome)
+  filename = paste0(list$OMOPID[outcome_index])
+  filepath = paste0("Z:\\Finngen_r12_metabolism_rev_MR_results\\", filename)
 
-  exposure_clump <- ieugwasr::ld_clump(dat = exposure_dat, clump_r2 = 0.01, clump_kb = 10000, clump_p = 1, plink_bin = "C:/Users/Jerry/.conda/envs/r45/Lib/R/library/plinkbinr/bin/plink_Windows.exe", bfile = "Z:/1kgv3/EUR")
-
-  colnames(exposure_clump)[colnames(exposure_clump) == "rsid"] <- "SNP"
-  colnames(exposure_clump)[colnames(exposure_clump) == "pval"] <- "pval.exposure"
-  colnames(exposure_clump)[colnames(exposure_clump) == "trait_id"] <- "id.exposure"
-
-  # get exposure number from list, finn_exposure is LONGNAME, get OMOPID:
-  exposure_index = which(list$LONGNAME == finn_exposure)
-  filename = paste0(list$OMOPID[exposure_index])
-  filepath = paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename)
-  # create output folder for each exposure:
   if (!dir.exists(filepath)) {
     dir.create(filepath)
   }
-  setwd(paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename))
+  setwd(paste0("Z:\\Finngen_r12_metabolism_rev_MR_results\\", filename))
   
 
-  dat <- harmonise_data(exposure_dat = exposure_clump, outcome_dat = msaoutcome)
+  dat <- harmonise_data(exposure_dat = exposure_clump, outcome_dat = outcome_dat)
   res <- mr(dat)
   #export res to tsv in working directory:
   wd = getwd()
