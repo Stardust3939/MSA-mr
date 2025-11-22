@@ -21,6 +21,12 @@ msaoutcome = read_exposure_data(
   log_pval = FALSE
 )
 
+# open detailed exposure list to get exposure index:
+list = read.excel("Z:\\finngene_summary_table.xlsx")
+
+setwd("Z:\\Finngen_r12_metabolism_MR_results")
+
+
 for (finn_exposure in exposure_list) {
   exposure_dat = data[data$exposure == finn_exposure, ]
   colnames(exposure_dat)[colnames(exposure_dat) == "SNP"] <- "rsid"
@@ -32,15 +38,50 @@ for (finn_exposure in exposure_list) {
   colnames(exposure_clump)[colnames(exposure_clump) == "rsid"] <- "SNP"
   colnames(exposure_clump)[colnames(exposure_clump) == "pval"] <- "pval.exposure"
   colnames(exposure_clump)[colnames(exposure_clump) == "trait_id"] <- "id.exposure"
+
+  # get exposure number from list, finn_exposure is LONGNAME, get OMOPID:
+  exposure_index = which(list$LONGNAME == finn_exposure)
+  filename = paste0(list$OMOPID[exposure_index], "_", gsub(" ", "_", finn_exposure))
+
+  dat <- harmonise_data(exposure_dat = exposure_clump, outcome_dat = outcome)
+  res <- mr(dat)
+  #export res to tsv in working directory:
+  wd = getwd()
+  write.table(res, file = paste0(wd, "\\", filename, "_MR_result.tsv"), sep = "\t", row.names = F)
   
-  harmonised_data <- harmonise_data(
-    exposure_dat,
-    msaoutcome,
-    action = 2
-  )
+  het <- mr_heterogeneity(dat)
+  #export het to tsv in working directory:
+  write.table(het, file = paste0(wd, "\\", filename, "_MR_heterogeneity.tsv"), sep = "\t", row.names = F)
   
-  mr_results <- mr(harmonised_data)
+  ple <- mr_pleiotropy_test(dat)
+  #export ple to tsv in working directory:
+  write.table(ple, file = paste0(wd, "\\", filename, "_MR_pleiotropy.tsv"), sep = "\t", row.names = F)
   
-  output_file <- paste0("Z:\\Finngen_r12_metabolism_results\\", finn_exposure, "_MR_results.txt")
-  write.table(mr_results, file = output_file, sep = "\t", row.names = FALSE, quote = FALSE)
+  #p1 = mr_scatter_plot(res,dat)
+  png(file = "scatter_plot.png", width = 800, height = 800)
+  p1 = mr_scatter_plot(res,dat)
+  print(p1)
+  dev.off()
+  
+  result_single <- mr_singlesnp(dat)
+  #p2 = mr_forest_plot(result_single)
+  png(file = "forest_plot.png", width = 800, height = 800)
+  p2 = mr_forest_plot(result_single)
+  print(p2)
+  dev.off()
+  
+  result_loo <- mr_leaveoneout(dat)
+  #p3 = mr_leaveoneout_plot(result_loo)
+  png(file = "leaveoneout_plot.png", width = 800, height = 800)
+  p3 = mr_leaveoneout_plot(result_loo)
+  print(p3)
+  dev.off()
+  
+  #p4=mr_funnel_plot(result_single)
+  png(file = "funnel_plot.png", width = 800, height = 800)
+  p4 = mr_funnel_plot(result_single)
+  print(p4)
+  dev.off()
+  
+  Visualizing_MR_forest(res,save_plot = TRUE,plot_pdf = "forest_plot")
 }
