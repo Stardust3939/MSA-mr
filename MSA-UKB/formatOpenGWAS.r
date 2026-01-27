@@ -2,19 +2,19 @@ library(QTLMR)
 library(ieugwasr)
 library(readr)
 
-folderpath = "/home/stardust/Documents/MSA-UKB-GWAS/MR-GWAS/"
-outpath = "/home/stardust/Documents/MSA-UKB-GWAS/MR-GWAS-format/"
+folderpath = "/home/stardust/Documents/MSA-UKB-GWAS/MR-GWAS-2/"
+outpath = "/home/stardust/Documents/MSA-UKB-GWAS/MR-GWAS2-format/"
 files = list.files(folderpath, pattern = "*.vcf.gz", full.names = TRUE)
 
 # get gwas id, gwas id is the file name without suffix
 gwas_ids = sub(".vcf.gz$", "", basename(files))
 # print(gwas_ids)
 
-# metadata_list = gwasinfo(id = gwas_ids, opengwas_jwt = get_opengwas_jwt())
-# write_tsv(metadata_list, file = "/home/stardust/Documents/MSA-UKB-GWAS/GWAS_info.tsv")
+#metadata_list = gwasinfo(id = gwas_ids, opengwas_jwt = get_opengwas_jwt())
+#write_tsv(metadata_list, file = "/home/stardust/Documents/MSA-UKB-GWAS/GWAS_info2.tsv")
 
 # read meta.tsv in folderpath for gwas metadata
-metadata_list = read_tsv("/home/stardust/Documents/MSA-UKB-GWAS/GWAS_info.tsv")
+metadata_list = read_tsv("/home/stardust/Documents/MSA-UKB-GWAS/GWAS_info2.tsv")
 # go through each gwas, read sample_size from metadata_list:
 
 for (i in 1:length(gwas_ids)) {

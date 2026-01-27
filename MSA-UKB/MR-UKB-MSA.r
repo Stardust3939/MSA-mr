@@ -8,13 +8,15 @@ library(readxl)
 
 msapath1 = "/home/stardust/Documents/MSA-UKB-GWAS/GCST90406924_hg19_TwosampleMR.txt"
 msapath2 = "/home/stardust/Documents/MSA-UKB-GWAS/GCST90406925_hg19_TwosampleMR.txt"
-result_path = "/home/stardust/Documents/MSA-UKB-GWAS/result1/"
-exposure_p_val_threshold = 5e-8
-clump_r2_threshold = 0.001
-clump_kb_threshold = 10000
+result_path = "/home/stardust/Documents/MSA-UKB-GWAS/result21_1/"
+exposure_path = "/home/stardust/Documents/MSA-UKB-GWAS/MR-GWAS2-format/"
+msapath = msapath1
+exposure_p_val_threshold = 5e-7
+clump_r2_threshold = 0.005
+clump_kb_threshold = 5000
 
 msaoutcome <- read_outcome_data(
-  msapath1,
+  msapath,
   snps = NULL,
   sep = "\t",
   #phenotype_col = "Phenotype",
@@ -37,9 +39,9 @@ msaoutcome <- read_outcome_data(
   pos_col = "pos.outcome"
 )
 
-files <- list.files("/home/stardust/Documents/MSA-UKB-GWAS/MR-GWAS-format", pattern = ".txt", full.names = T)
+files <- list.files(exposure_path, pattern = ".txt", full.names = T)
 
-cl <- makeCluster(16)
+cl <- makeCluster(28)
 registerDoParallel(cl)
 
 foreach (i = 1:28, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR","ieugwasr","readxl")) %dopar% {
