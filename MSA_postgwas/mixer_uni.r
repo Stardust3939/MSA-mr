@@ -17,15 +17,15 @@ selected_finn_files = finn_files[which(omopids %in% use_omopids)]
 save_paths = paste0("/home/stardust/Documents/mixer_results_selected/", use_omopids)
 
 for (i in 2:length(selected_finn_files)) {
-    MiXeR_run(GWASfile = c(msa_files[1], selected_finn_files[i]),
-          GWASname = c("MSA", use_omopids[i]),
-          bfile = "/home/stardust/Documents/mixer1000g",
-          mixer_py = "/home/stardust/Documents/gsa-mixer/precimed/mixer.py",
-          mixer_figures_py = "/home/stardust/Documents/gsa-mixer/precimed/mixer_figures.py",
-          lib = "/home/stardust/Documents/gsa-mixer/src/build/lib/libbgmg.so",
-          statistic = "mean std",
-          fit1_diffevo_fast_repeats = 20,
-          fit2_diffevo_fast_repeats = 20,
-          save_path = save_paths[i],
-          cores = 30)
+    MiXeR_Univariate (GWASfile = selected_finn_files[i],
+                  bfile = "/home/stardust/Documents/mixer1000g",
+                  mixer_py = "/home/stardust/Documents/gsa-mixer/precimed/mixer.py",
+                  lib = "/home/stardust/Documents/gsa-mixer/src/build/lib/libbgmg.so",
+                  stars_rep = 1,
+                  end_rep = 20,
+                  fit1 = TRUE,
+                  opt_arguments_fit = NULL,
+                  opt_arguments_test = NULL,
+                  save_path = save_paths[i],
+                  cores = 30)
 }

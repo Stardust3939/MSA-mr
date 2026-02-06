@@ -40,4 +40,5 @@ foreach (i = 1:length(file_list), .combine = 'c', .packages = c('QTLMR', "readxl
                   save_name = output_name,
                   save_path = out_dir)
 }
+gc()
 stopCluster(cl)
