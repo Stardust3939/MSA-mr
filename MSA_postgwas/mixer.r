@@ -16,7 +16,7 @@ selected_finn_files = finn_files[which(omopids %in% use_omopids)]
 
 save_paths = paste0("/home/stardust/Documents/mixer_results_selected/", use_omopids)
 
-for (i in 2:length(selected_finn_files)) {
+for (i in 1:length(selected_finn_files)) {
     MiXeR_run(GWASfile = c(msa_files[1], selected_finn_files[i]),
           GWASname = c("MSA", use_omopids[i]),
           bfile = "/home/stardust/Documents/mixer1000g",
