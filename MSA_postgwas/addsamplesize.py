@@ -3,8 +3,8 @@ import re
 import os
 from multiprocessing import Process
 
-source = "/home/stardust/Documents/finngen_metabolism_mtag"
-dest = "/home/stardust/Documents/finngen_metabolism_mtag_withsamplesize"
+source = "/home/stardust/Documents/finngen_metabolism_rsid"
+dest = "/home/stardust/Documents/finngen_metabolism_rsid_n"
 
 filenames = os.listdir(source)
 metadata ="/home/stardust/Documents/finngene_summary_table.xlsx"
@@ -14,7 +14,7 @@ def worker(metadatadest,sourcefold,destfold,filenames,startnum,tonum):
     metadata = pandas.read_excel(metadatadest)
     for i in range(startnum, tonum):
         filename = filenames[i]
-        omopid = re.search(r"(?<=R12_)\d+(?=_MTAG\.txt)", filename).group(0)
+        omopid = re.search(r"(?<=R12_)\d+(?=_snp\.txt\.txt)", filename).group(0)
         sample_size_row = metadata[metadata['OMOPID'] == int(omopid)]
         if not sample_size_row.empty:
             sample_size = sample_size_row['num_cases'].values[0]
