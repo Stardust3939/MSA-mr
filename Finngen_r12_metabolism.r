@@ -3,14 +3,13 @@ library(TwoSampleMR)
 library(readxl)
 library(foreach)
 library(doParallel)
-library(parallel)  
+library(parallel)
+library(stringr)  
 
-df = load("Z:\\finngen_R12_1e_4.Rdata")
 
-exposure_list = unique(data$exposure)
 
 msaoutcome = read_outcome_data(
-  "Z:\\MSA_TwosampleMR.txt",
+  "/home/stardust/Documents/msa_gwas_formatfile/msa24_TwosampleMR.txt",
   sep = "\t",
   snp_col = "SNP",
   beta_col = "beta.exposure",
@@ -27,51 +26,95 @@ msaoutcome = read_outcome_data(
 )
 
 # open detailed exposure list to get exposure index:
-list = read_excel("Z:\\finngene_summary_table.xlsx")
+# list = read_excel("Z:\\finngene_summary_table.xlsx")
 
-setwd("Z:\\Finngen_r12_metabolism_MR_results")
+# setwd("Z:\\Finngen_r12_metabolism_MR_results")
+exposure_dir = "/mnt/nas_ssd/finn_tmr"
 
+exposure_files = list.files(exposure_dir, pattern = "*.txt", full.names = TRUE)
 
-cl <- makeCluster(28)
+cl <- makeCluster(8)
 registerDoParallel(cl)
 
-foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readxl")) %dopar% {
-  finn_exposure = exposure_list[i]
-  exposure_dat = data[data$exposure == finn_exposure, ]
-  colnames(exposure_dat)[colnames(exposure_dat) == "SNP"] <- "rsid"
-  colnames(exposure_dat)[colnames(exposure_dat) == "pval.exposure"] <- "pval"
-  colnames(exposure_dat)[colnames(exposure_dat) == "id.exposure"] <- "trait_id"
+foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readxl", "stringr")) %dopar% {
+  finn_exposure = exposure_files[i]
+  filename = basename(finn_exposure)
+  omopid = str_extract(filename, "(?<=R12_)\\d+(?=_snp)")
 
-  exposure_clump <- ieugwasr::ld_clump(dat = exposure_dat, clump_r2 = 0.01, clump_kb = 10000, clump_p = 1, plink_bin = "C:/Users/Jerry/.conda/envs/r45/Lib/R/library/plinkbinr/bin/plink_Windows.exe", bfile = "Z:/1kgv3/EUR")
+  outpath = paste0("/home/stardust/Documents/finn_v2/", omopid)
+  # if outpath does not exist, create it,else skip to next iteration:
+  if (!dir.exists(outpath)) {
+    dir.create(outpath)
+  } else {
+    next
+  }
+  setwd(outpath)
 
+  exposure_dat = read_exposure_data(
+    filename = finn_exposure,
+    sep = "\t",
+    snp_col = "SNP",
+    beta_col = "beta.exposure",
+    se_col = "se.exposure",
+    effect_allele_col = "effect_allele.exposure",
+    other_allele_col = "other_allele.exposure",
+    eaf_col = "eaf.exposure",
+    pval_col = "pval.exposure",
+    samplesize_col = "samplesize.exposure",
+    min_pval = 1e-200,
+    chr_col = "chr.exposure",
+    pos_col = "pos.exposure",
+    log_pval = FALSE
+  )
+  # filter exposure_dat by pval < 5e-8:
+  exposure_dat_filter = subset(exposure_dat, pval.exposure < 5e-5)
+  N = exposure_dat_filter[1,"samplesize.exposure"]
+  exposure_dat_filter=transform(exposure_dat_filter,R2=2*((beta.exposure)^2)*eaf.exposure*(1-eaf.exposure))
+  exposure_dat_filter=transform(exposure_dat_filter,F=(N-2)*R2/(1-R2))
+  #filter exposure_dat by F > 10:
+  exposure_dat_filter = subset(exposure_dat_filter, F > 10)
+
+  ndata = nrow(exposure_dat_filter)
+  if (ndata < 2) {
+    next
+  }
+  # write an empty file to the outpath to indicate that this omopid has been processed:
+  file.create(paste0(outpath, "/F_processed.txt"))
+  rm(exposure_dat)
+  gc()
+
+  colnames(exposure_dat_filter)[colnames(exposure_dat_filter) == "SNP"] <- "rsid"
+  colnames(exposure_dat_filter)[colnames(exposure_dat_filter) == "pval.exposure"] <- "pval"
+  colnames(exposure_dat_filter)[colnames(exposure_dat_filter) == "id.exposure"] <- "trait_id"
+
+  exposure_clump <- ieugwasr::ld_clump_local(dat = exposure_dat_filter, clump_r2 = 0.001, clump_kb = 10000, clump_p = 1, plink_bin = "/home/stardust/miniconda3/envs/r45/bin/plink", bfile = "/mnt/nas_ssd/1kgv3/EUR")
+  gc()
   colnames(exposure_clump)[colnames(exposure_clump) == "rsid"] <- "SNP"
   colnames(exposure_clump)[colnames(exposure_clump) == "pval"] <- "pval.exposure"
   colnames(exposure_clump)[colnames(exposure_clump) == "trait_id"] <- "id.exposure"
 
-  # get exposure number from list, finn_exposure is LONGNAME, get OMOPID:
-  exposure_index = which(list$LONGNAME == finn_exposure)
-  filename = paste0(list$OMOPID[exposure_index])
-  filepath = paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename)
-  # create output folder for each exposure:
-  if (!dir.exists(filepath)) {
-    dir.create(filepath)
+  sizeofexposure = nrow(exposure_clump)
+  if (sizeofexposure < 2) {
+    next
   }
-  setwd(paste0("Z:\\Finngen_r12_metabolism_MR_results\\", filename))
-  
+  # write an empty file to the outpath to indicate that this omopid has been clumped:
+  file.create(paste0(outpath, "/clumped.txt"))
+  rm(exposure_dat_filter)
+  gc()
 
   dat <- harmonise_data(exposure_dat = exposure_clump, outcome_dat = msaoutcome)
   res <- mr(dat)
   #export res to tsv in working directory:
   wd = getwd()
-  write.table(res, file = paste0(wd, "\\", filename, "_MR_result.tsv"), sep = "\t", row.names = F)
+  write.table(res, file = paste0(wd, "/", filename, "_MR_result.tsv"), sep = "\t", row.names = F)
   
   het <- mr_heterogeneity(dat)
   #export het to tsv in working directory:
-  write.table(het, file = paste0(wd, "\\", filename, "_MR_heterogeneity.tsv"), sep = "\t", row.names = F)
+  write.table(het, file = paste0(wd, "/", filename, "_MR_heterogeneity.tsv"), sep = "\t", row.names = F)
   
   ple <- mr_pleiotropy_test(dat)
   #export ple to tsv in working directory:
-  write.table(ple, file = paste0(wd, "\\", filename, "_MR_pleiotropy.tsv"), sep = "\t", row.names = F)
+  write.table(ple, file = paste0(wd, "/", filename, "_MR_pleiotropy.tsv"), sep = "\t", row.names = F)
   
   #p1 = mr_scatter_plot(res,dat)
   png(file = "scatter_plot.png", width = 800, height = 800)
@@ -100,6 +143,11 @@ foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readx
   dev.off()
   
   Visualizing_MR_forest(res,save_plot = TRUE,plot_pdf = "forest_plot")
+  
+  rm(dat,exposure_dat,exposure_dat_filter,exposure_clump,res,het,ple,result_single,result_loo,p1,p2,p3,p4,)
+  gc()
 }
 
 stopCluster(cl)
+rm(list = ls())
+gc()
