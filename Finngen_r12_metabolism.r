@@ -9,7 +9,7 @@ library(stringr)
 
 
 msaoutcome = read_outcome_data(
-  "/home/stardust/Documents/msa_gwas_formatfile/msa24_TwosampleMR.txt",
+  "/home/stardust/Documents/msa_gwas_formatfile/msa25_TwosampleMR.txt",
   sep = "\t",
   snp_col = "SNP",
   beta_col = "beta.exposure",
@@ -41,7 +41,7 @@ foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readx
   filename = basename(finn_exposure)
   omopid = str_extract(filename, "(?<=R12_)\\d+(?=_snp)")
 
-  outpath = paste0("/home/stardust/Documents/finn_v2/", omopid)
+  outpath = paste0("/home/stardust/Documents/finn_25v2/", omopid)
   # if outpath does not exist, create it,else skip to next iteration:
   if (!dir.exists(outpath)) {
     dir.create(outpath)
@@ -66,7 +66,7 @@ foreach (i = 1:383, .combine = 'c', .packages = c('QTLMR', "TwoSampleMR", "readx
     pos_col = "pos.exposure",
     log_pval = FALSE
   )
-  # filter exposure_dat by pval < 5e-8:
+  # filter exposure_dat by pval.exposure < 5e-6:
   exposure_dat_filter = subset(exposure_dat, pval.exposure < 5e-5)
   N = exposure_dat_filter[1,"samplesize.exposure"]
   exposure_dat_filter=transform(exposure_dat_filter,R2=2*((beta.exposure)^2)*eaf.exposure*(1-eaf.exposure))

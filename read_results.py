@@ -1,11 +1,11 @@
 import pandas
 import os
 
-source_dir = "/home/stardust/Documents/finn_v2"
+source_dir = "/home/stardust/Documents/finn_v4"
 dir_list = os.listdir(source_dir)
 # sort dir_list in ascending order
 dir_list.sort()
-
+print("omopid snp_count sig_count heterogeneity pleiotropy")
 for dir_name in dir_list:
     dir_path = os.path.join(source_dir, dir_name)
     # check if dir_path is a directory:
@@ -25,7 +25,8 @@ for dir_name in dir_list:
     if 'pval' not in df.columns:
         continue
     # count how many rows in column 'pval' less than 0.05:
-    count = len(df[df['pval'] < 0.05])
+    count = len(df[df['pval'] < 0.01])
+    nsnp = df["nsnp"].iloc[0]
     if count >= 2:
         # find file name end with "heterogeneity.tsv" and "pleiotropy.tsv"
         heterogeneity_file = ""
@@ -40,10 +41,10 @@ for dir_name in dir_list:
             pleiotropy_df = pandas.read_csv(pleiotropy_file, sep="\t", low_memory=False)
             # check if there is any row in heterogeneity_df with pval less than 0.05 and any row in pleiotropy_df with pval less than 0.05
             if (heterogeneity_df['Q_pval'] < 0.05).any() and (pleiotropy_df['pval'] < 0.05).any():
-                print(dir_name, count, "heterogeneity pval < 0.05 and pleiotropy pval < 0.05")
+                print(dir_name, nsnp, count, "heterogeneity pval < 0.05 and pleiotropy pval < 0.05")
             elif (heterogeneity_df['Q_pval'] < 0.05).any():
-                print(dir_name, count, "heterogeneity pval < 0.05")
+                print(dir_name, nsnp, count, "heterogeneity pval < 0.05")
             elif (pleiotropy_df['pval'] < 0.05).any():
-                print(dir_name, count, "pleiotropy pval < 0.05")
+                print(dir_name, nsnp, count, "pleiotropy pval < 0.05")
             else:
-                print(dir_name, count)
+                print(dir_name, nsnp, count)
